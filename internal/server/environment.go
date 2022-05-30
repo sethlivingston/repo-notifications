@@ -8,7 +8,7 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/moov-io/base/log"
-	"github.com/sethlivingston/reponotifications/internal/github"
+	"github.com/sethlivingston/repowatch/internal/github"
 )
 
 type Environment struct {

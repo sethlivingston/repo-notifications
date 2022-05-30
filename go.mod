@@ -1,4 +1,4 @@
-module github.com/sethlivingston/reponotifications
+module github.com/sethlivingston/repowatch
 
 go 1.18
 
