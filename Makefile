@@ -19,24 +19,24 @@ update:
 	go get ./...
 
 build:
-	go build -ldflags "-X github.com/sethlivingston/repo-notifications.Version=${VERSION}" -o bin/repo-notifications github.com/sethlivingston/repo-notifications/cmd/repo-notifications
+	go build -ldflags "-X github.com/sethlivingston/reponotifications.Version=${VERSION}" -o bin/reponotifications github.com/sethlivingston/reponotifications/cmd/reponotifications
 
 .PHONY: check
 check: update
-@wget -O lint-project.sh https://raw.githubusercontent.com/moov-io/infra/master/go/lint-project.sh
-@chmod +x ./lint-project.sh
-COVER_THRESHOLD=70.0 ./lint-project.sh
+	@wget -O lint-project.sh https://raw.githubusercontent.com/moov-io/infra/master/go/lint-project.sh
+	@chmod +x ./lint-project.sh
+	COVER_THRESHOLD=70.0 ./lint-project.sh
 
 dockerx: update
-ifeq ($(shell docker manifest inspect moovfinancial/busint:${VERSION} > /dev/null ; echo $$?), 0)
+ifeq ($(shell docker manifest inspect sethlivingston/reponotifications:${VERSION} > /dev/null ; echo $$?), 0)
 	$(error docker tag already exists)
 else
 	docker buildx build \
 		--push \
 		--platform linux/arm64/v8,linux/amd64 \
 		--pull --build-arg VERSION=${VERSION} \
-		-t moovfinancial/busint:${VERSION} \
-		-t moovfinancial/busint:latest \
+		-t sethlivingston/reponotifications:${VERSION} \
+		-t sethlivingston/reponotifications:latest \
 		-f Dockerfile .
 endif
 
@@ -45,19 +45,22 @@ dev-docker: update
 # Build a docker image for our local platform
 	docker build --pull \
 		--build-arg VERSION=${DEV_VERSION} \
-		-t moovfinancial/busint:${DEV_VERSION} \
+		-t sethlivingston/reponotifications:${DEV_VERSION} \
 		-f Dockerfile .
 ifeq ($(GITHUB_ACTIONS),true)
-	docker push moovfinancial/busint:${DEV_VERSION}
+	docker push sethlivingston/reponotifications:${DEV_VERSION}
 endif
 
+run: update build
+	./bin/reponotifications
+
 docker-run:
-	docker run -v ${PWD}/data:/data -v ${PWD}/configs:/configs --env APP_CONFIG="/configs/config.yml" -it --rm moovfinancial/busint:${VERSION}
+	docker run -v ${PWD}/data:/data -v ${PWD}/configs:/configs --env APP_CONFIG="/configs/config.yml" -it --rm sethlivingston/reponotifications:${VERSION}
 
 test: update
-	go test -cover github.com/sethlivingston/repo-notifications/...
+	go test -cover github.com/sethlivingston/reponotifications/...
 
 .PHONY: clean
 clean:
-@rm -rf cover.out coverage.txt misspell* staticcheck*
-@rm -rf ./bin/
+	@rm -rf cover.out coverage.txt misspell* staticcheck*
+	@rm -rf ./bin/

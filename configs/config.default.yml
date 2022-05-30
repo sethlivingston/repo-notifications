@@ -1,0 +1,2 @@
+Server:
+  BindAddress: localhost:3001
