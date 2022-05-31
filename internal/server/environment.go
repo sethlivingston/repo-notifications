@@ -8,15 +8,18 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/moov-io/base/log"
+	"github.com/sethlivingston/repowatch/internal/config"
 	"github.com/sethlivingston/repowatch/internal/github"
+	"github.com/sethlivingston/repowatch/internal/status"
 )
 
 type Environment struct {
 	Logger log.Logger
-	Config *Config
+	Config *config.Config
 
 	GitHubService    github.GitHubService
 	GitHubController github.GitHubController
+	StatusController status.StatusController
 
 	Router   *mux.Router
 	Shutdown func()
@@ -36,7 +39,7 @@ func NewEnvironment(env *Environment) (*Environment, error) {
 	}
 
 	if env.Config == nil {
-		config, err := LoadConfig(env.Logger)
+		config, err := config.LoadConfig(env.Logger)
 		if err != nil {
 			return nil, fmt.Errorf("loading config: %v", err)
 		}
@@ -47,8 +50,6 @@ func NewEnvironment(env *Environment) (*Environment, error) {
 		env.Router = mux.NewRouter()
 	}
 
-	// Initialize listeners
-
 	if env.Config.GitHub != nil {
 		err := env.listenToGitHub()
 		if err != nil {
@@ -56,13 +57,16 @@ func NewEnvironment(env *Environment) (*Environment, error) {
 		}
 	}
 
-	// Initialize broadcasters
-
 	if env.Config.Slack != nil {
 		err := env.broadcastToSlack()
 		if err != nil {
 			return nil, fmt.Errorf("setting up slack broadcasters: %v", err)
 		}
+	}
+
+	if env.StatusController == nil {
+		env.StatusController = status.NewStatusController(env.Logger, env.Config)
+		env.StatusController.AppendRoutes(env.Router)
 	}
 
 	return env, nil
